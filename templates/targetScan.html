@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    {% load staticfiles %}
+    <title>TargetScan Gene Retrieval</title>
+    <!-- Bootstrap core CSS -->
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    <!-- Our CSS file -->
+    <link href="{% static 'css/targetscan.css' %}" rel="stylesheet">
+</head>
+<body class="container-fluid">
+<div class="row">
+    <div class="span3">
+        <div class="row">
+            <div class="span3">
+                <img src="{% static 'image/MMCRI_2.gif' %}"/>
+            </div>
+        </div>
+    </div>
+    <div class="span9">
+        <div class="row">
+            <div class="span9">
+                <h1></h1>
+
+                <h1 class="header">TargetScan Gene Retrieval </h1>
+
+                <h1></h1>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="span12">
+        <div class="well" style="border: 1px solid darkblue;">
+            This application, given one or more miRNA symbols, will search a TargetScan database for gene
+            matches. A table of matching genes and their context scores will be displayed, sorted by context
+            score, lowest to highest value.
+            <p></p>
+
+            <p>The database was built from a TargetScan data file downloaded on 11 Feb 2014 from the TargetScan
+                <a href="http://www.targetscan.org/cgi-bin/targetscan/data_download.cgi?db=vert_61">Data Download
+                    Page</a></p>
+
+            <p>Usage:</p>
+            <ol>
+                <li>Enter one or more miRNA symbols separated by spaces and/or carriage returns, or paste from file/spreadsheet. E.g., hsa-miR-3613-3p </li>
+                <li>Choose the number of symbols to be displayed.</li>
+                <li>Enter the upper limit of a Context Score. Only genes with a context score value less than this value will be retrieved.
+                    Context score values typically range from -8.74 to 0.026</li>
+                <li>Press <em>Submit</em>.</li>
+                <li>Optionally, download the results (as a csv file) by clicking the <em>Download results</em> button. Note
+                    that
+                    <bold>all</bold>
+                    genes and context scores where the context score is less than the Threshold will be downloaded.
+                </li>
+            </ol>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="span12">
+        <div class="well" style="border: 1px solid darkblue;">
+            <form class="form-inline" action="" method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <ul class="non-field-errors">
+                    {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class="row">
+                    <div class="span7">
+                         Enter miRNA symbol(s): {{ form.miRNA }}
+                     </div>
+                    <div class="span4">
+                       {% if result_message %}
+                        <span class="non-field-errors">{{ result_message }} </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <br>
+
+                <div class="row">
+                    <div class="span4">
+                        Maximum number of genes displayed {{ form.maximum_no_of_genes }}
+                    </div>
+                    <div class="span5">
+                        Maximum number of occurrences displayed {{ form.maximum_no_of_occurrences }}
+                    </div>
+                </div>
+            <br>
+                <div class="row">
+                    <div class="span3">
+                        {{ form.context_score_threshold.errors }}
+                        Context Score Threshold: {{ form.context_score_threshold }}
+                    </div>
+                </div>
+                <br>
+                <br>
+
+                <div class="row">
+                    <div class="span4">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                    <div class="span4">
+
+                    </div>
+                    <div class="span3">
+                        {% if results %}
+                            <button type="submit" class="btn btn-info" name="download">Download results</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="span11">
+        <h2 class="header">Results</h2>
+    </div>
+</div>
+{% if miRNA_gene_matches %}
+    {% if miRNA_gene_matches == 0 %}
+    <h4>There were no gene matches.</h4>
+    {% else %}
+<div class="row">
+    <div class="span6">
+        <h5>Top gene occurrences out of {{ miRNA_gene_matches }} set(s) of gene matches:</h5>
+    </div>
+</div>
+<div class="row">
+    <div class="span4">
+        <table class="table table-striped table-condensed table-bordered" style="border: 1px solid darkblue;">
+            <tr><th>Gene</th><th>Occurrences</th></tr>
+            {% for gene, count in occurrences %}
+                <tr>
+                    <td>
+                        <a href="http://www.ncbi.nlm.nih.gov/gene?term={{ gene }}[Gene/Protein Name]">{{ gene }}</a>
+                    </td>
+                    <td> {{ count }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="row">
+        <div class="span4">
+            <button class="btn btn-info" onclick="copyToClipboard('{{ gene_symbols }}');">Copy Genes to clipboard</button>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="span6">
+        <h4>{{ miRNA_gene_matches }} set(s) of gene matches for {{ results|length }} miRNA(s) submitted.</h4>
+    </div>
+</div>
+<div class="row">
+    <div class="span6">
+        {% if results %}
+            <div class="accordion">
+            {% for result in results %}
+                {% if not result.gene_list %}
+                    No gene matches for <strong>{{ result.miRNA_symbol }}</strong><br>
+                {% else %}
+
+                    <div class="accordion-group" style="border: 1px solid darkblue;">
+                        <div class="accordion-heading">
+                            <a class="accordion-toggle" data-toggle="collapse" href="#{{ result.miRNA_symbol }}">
+                                {{ result.no_of_hits }} gene matches for <strong>{{ result.miRNA_symbol }}</strong>
+                                with Context Score < {{ context_score_threshold }}
+                            </a>
+                        </div>
+                        <div id="{{ result.miRNA_symbol }}" class="accordion-body collapse">
+                            <div class="accordion-inner">
+                                <table class="table table-striped table-condensed table-bordered">
+                                    <tr>
+                                        <th>Gene Symbol</th>
+                                        <th>Context Score</th>
+                                    </tr>
+                                    {% for gene, score in result.gene_list %}
+                                        <tr>
+                                            <td>{{ gene }}</td>
+                                            <td>{{ score }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endif %}
+    <!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/targetscan.js' %}"></script>
+</body>
+</html>

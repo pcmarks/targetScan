@@ -1,0 +1,32 @@
+/*
+    Override some of Bootstrap's settings
+*/
+
+body {background-color: #fffacd;}
+
+.header {
+    color: #891d2d;
+    display: inline;
+}
+
+#study-table td {
+    width: 21em;
+}
+#gene-entry-table td {
+    width: 21em;
+}
+
+.plot {
+    margin: 20px;
+}
+
+.table-bordered th, .table-bordered td, .table-bordered tfoot, .table-bordered thead, .table-bordered{
+    border-color: darkblue;
+}
+.nav {
+    border-color: darkblue;
+}
+
+.accordion-group, .accordion-heading {
+    border-color: darkblue;
+}
